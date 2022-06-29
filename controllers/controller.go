@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nenodias/gin-api/database"
@@ -49,8 +50,14 @@ func BuscaAlunoPorID(c *gin.Context) {
 func DeletaAluno(c *gin.Context) {
 	var aluno models.Aluno
 	id := c.Params.ByName("id")
-	database.DB.Delete(&aluno, id)
-	c.JSON(http.StatusOK, gin.H{"data": "Aluno deletado com sucesso"})
+	ID, _ := strconv.Atoi(id)
+	aluno.ID = uint(ID)
+	database.DB.Unscoped().Delete(&aluno)
+	if database.DB.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"data": "Erro inesperado: " + database.DB.Error.Error()})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": "Aluno deletado com sucesso"})
+	}
 }
 
 func EditaAluno(c *gin.Context) {
@@ -80,4 +87,16 @@ func BuscaAlunoPorCPF(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, aluno)
+}
+
+func Home(c *gin.Context) {
+	var alunos []models.Aluno
+	database.DB.Find(&alunos)
+	c.HTML(http.StatusOK, "index.html", gin.H{
+		"alunos": alunos,
+	})
+}
+
+func RotaNaoEncontrada(c *gin.Context) {
+	c.HTML(http.StatusNotFound, "404.html", nil)
 }

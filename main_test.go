@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var ID int
 var ALUNO_MOCK_NOME = "Nome do Aluno Teste"
 var ALUNO_MOCK_CPF = "12345678901"
 var ALUNO_MOCK_RG = "123456789"
@@ -27,15 +26,16 @@ func SetupTestes() *gin.Engine {
 	return routes
 }
 
-func CriaAlunoMock() {
+func CriaAlunoMock() int {
 	aluno := models.Aluno{Nome: ALUNO_MOCK_NOME, CPF: ALUNO_MOCK_CPF, RG: ALUNO_MOCK_RG}
 	database.DB.Create(&aluno)
-	ID = int(aluno.ID)
+	return int(aluno.ID)
 }
 
-func DeletaAlunoMock() {
+func DeletaAlunoMock(ID int) {
 	var aluno models.Aluno
-	database.DB.Delete(&aluno, ID)
+	aluno.ID = uint(ID)
+	database.DB.Unscoped().Delete(&aluno)
 }
 
 func TestVerificaStatusCodeSaudacao(t *testing.T) {
@@ -54,8 +54,8 @@ func TestVerificaStatusCodeSaudacao(t *testing.T) {
 
 func TestExibeTodosOsAlunos(t *testing.T) {
 	database.ConectaComBancoDeDados()
-	CriaAlunoMock()
-	defer DeletaAlunoMock()
+	ID := CriaAlunoMock()
+	defer DeletaAlunoMock(ID)
 	r := SetupTestes()
 	r.GET("/alunos", controllers.ExibeTodosAlunos)
 	req, _ := http.NewRequest("GET", "/alunos", nil)
@@ -68,8 +68,8 @@ func TestExibeTodosOsAlunos(t *testing.T) {
 
 func TestBuscaPorCPF(t *testing.T) {
 	database.ConectaComBancoDeDados()
-	CriaAlunoMock()
-	defer DeletaAlunoMock()
+	ID := CriaAlunoMock()
+	defer DeletaAlunoMock(ID)
 	r := SetupTestes()
 	r.GET("/alunos/cpf/:cpf", controllers.BuscaAlunoPorCPF)
 	req, _ := http.NewRequest("GET", "/alunos/cpf/12345678901", nil)
@@ -82,8 +82,8 @@ func TestBuscaPorCPF(t *testing.T) {
 
 func TestBuscaAlunoPorId(t *testing.T) {
 	database.ConectaComBancoDeDados()
-	CriaAlunoMock()
-	defer DeletaAlunoMock()
+	ID := CriaAlunoMock()
+	defer DeletaAlunoMock(ID)
 	r := SetupTestes()
 	r.GET("/alunos/:id", controllers.BuscaAlunoPorID)
 	url := fmt.Sprintf("/alunos/%d", ID)
@@ -102,7 +102,7 @@ func TestBuscaAlunoPorId(t *testing.T) {
 
 func TestDeletaAlunoPorId(t *testing.T) {
 	database.ConectaComBancoDeDados()
-	CriaAlunoMock()
+	ID := CriaAlunoMock()
 	r := SetupTestes()
 	r.DELETE("/alunos/:id", controllers.DeletaAluno)
 	url := fmt.Sprintf("/alunos/%d", ID)
@@ -116,8 +116,8 @@ func TestDeletaAlunoPorId(t *testing.T) {
 
 func TestAtualizaAlunoPorId(t *testing.T) {
 	database.ConectaComBancoDeDados()
-	CriaAlunoMock()
-	defer DeletaAlunoMock()
+	ID := CriaAlunoMock()
+	defer DeletaAlunoMock(ID)
 	r := SetupTestes()
 	r.PATCH("/alunos/:id", controllers.EditaAluno)
 	url := fmt.Sprintf("/alunos/%d", ID)
